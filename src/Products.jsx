@@ -1,13 +1,15 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 
-const fetchProducts = async() => {
+
+
+const Products = () => {
+
+  const fetchProducts = async() => {
     const response = await fetch("https://dummyjson.com/products")
     const data = await response.json();
     return data.products
 }
-
-const Products = () => {
 
     const {isLoading, error, data: products} = useQuery(
         { queryKey: ['products'], 

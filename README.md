@@ -1,8 +1,10 @@
-# React + Vite
+### Welcome to React query advance.
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+1. Paginated queries
+2. Parallel queries
+3. Optimistic updates
+4. Dependant queries
 
-Currently, two official plugins are available:
+### json server
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+`json-server --watch db.json`
