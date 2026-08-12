@@ -1,37 +1,30 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import {
-  ArrowLeftIcon,
-  HeartIcon,
-  MinusIcon,
-  PackageIcon,
-  PlusIcon,
-  RotateCcwIcon,
-  ShieldCheckIcon,
-  StarIcon,
-  TruckIcon,
-} from "lucide-react";
+import { HeartIcon, StarIcon } from "lucide-react";
 import { Link, useParams } from "react-router-dom";
 import { toast } from "sonner";
 
+import { Page, SectionHeader } from "@/components/layout/page";
 import { ProductCard } from "@/components/product/product-card";
 import { ProductGridSkeleton } from "@/components/product/product-card-skeleton";
+import { QuantityStepper } from "@/components/product/quantity-stepper";
 import { RatingStars } from "@/components/product/rating-stars";
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Badge } from "@/components/ui/badge";
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { Field, FieldLabel } from "@/components/ui/field";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Table, TableBody, TableCell, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Textarea } from "@/components/ui/textarea";
 import { api } from "@/lib/api";
 import { discountedPrice, formatDate, formatPrice, titleCase } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -92,17 +85,17 @@ export default function ProductDetailPage() {
 
   if (isError) {
     return (
-      <div className="mx-auto max-w-3xl px-4 py-16">
+      <Page>
         <Alert variant="destructive">
           <AlertTitle>Product not found</AlertTitle>
-          <AlertDescription className="flex flex-col items-start gap-2">
+          <AlertDescription className="flex flex-col items-start gap-3">
             <span>{error.message}</span>
             <Button asChild size="sm" variant="outline">
               <Link to="/products">Back to shop</Link>
             </Button>
           </AlertDescription>
         </Alert>
-      </div>
+      </Page>
     );
   }
 
@@ -112,6 +105,7 @@ export default function ProductDetailPage() {
   const hasDiscount = product.discountPercentage > 0;
   const isWishlisted = wishlist.has(product.id);
   const images = product.images?.length ? product.images : [product.thumbnail];
+  const inStock = product.stock > 0;
 
   const handleReviewSubmit = (event) => {
     event.preventDefault();
@@ -129,19 +123,51 @@ export default function ProductDetailPage() {
     });
   };
 
-  return (
-    <div className="mx-auto max-w-7xl px-4 py-8">
-      <Button asChild variant="ghost" size="sm" className="mb-6 -ml-2">
-        <Link to="/products">
-          <ArrowLeftIcon className="size-4" />
-          Back to shop
-        </Link>
-      </Button>
+  const specs = [
+    ["SKU", product.sku],
+    ["Brand", product.brand],
+    ["Category", titleCase(product.category)],
+    ["Weight", product.weight != null && `${product.weight} kg`],
+    [
+      "Dimensions",
+      product.dimensions &&
+        `${product.dimensions.width} × ${product.dimensions.height} × ${product.dimensions.depth} cm`,
+    ],
+    ["Minimum order", product.minimumOrderQuantity],
+    ["Stock", product.stock],
+    ["Tags", product.tags?.join(", ")],
+  ];
 
-      <div className="grid gap-10 lg:grid-cols-2">
+  return (
+    <Page>
+      <Breadcrumb>
+        <BreadcrumbList>
+          <BreadcrumbItem>
+            <BreadcrumbLink asChild>
+              <Link to="/products">Shop</Link>
+            </BreadcrumbLink>
+          </BreadcrumbItem>
+          <BreadcrumbSeparator />
+          <BreadcrumbItem>
+            <BreadcrumbLink asChild>
+              <Link to={`/products?category=${product.category}`}>
+                {titleCase(product.category)}
+              </Link>
+            </BreadcrumbLink>
+          </BreadcrumbItem>
+          <BreadcrumbSeparator />
+          <BreadcrumbItem>
+            <BreadcrumbPage className="max-w-[16rem] truncate">
+              {product.title}
+            </BreadcrumbPage>
+          </BreadcrumbItem>
+        </BreadcrumbList>
+      </Breadcrumb>
+
+      <div className="mt-6 grid gap-10 lg:grid-cols-2 lg:gap-14">
         {/* Gallery */}
-        <div className="space-y-4">
-          <div className="overflow-hidden rounded-lg border bg-muted">
+        <div>
+          <div className="overflow-hidden rounded-lg border bg-muted/40">
             <img
               src={images[activeImage]}
               alt={product.title}
@@ -150,16 +176,20 @@ export default function ProductDetailPage() {
           </div>
 
           {images.length > 1 && (
-            <div className="flex gap-2">
+            <div className="mt-3 flex gap-2">
               {images.map((image, index) => (
                 <button
                   key={image}
                   type="button"
                   onClick={() => setActiveImage(index)}
                   aria-label={`View image ${index + 1}`}
+                  aria-current={index === activeImage}
                   className={cn(
-                    "size-16 overflow-hidden rounded-md border bg-muted",
-                    index === activeImage && "ring-2 ring-primary"
+                    "size-16 overflow-hidden rounded-md border bg-muted/40 transition-colors",
+                    "focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none",
+                    index === activeImage
+                      ? "border-foreground"
+                      : "hover:border-muted-foreground/40"
                   )}
                 >
                   <img src={image} alt="" className="size-full object-contain" />
@@ -171,72 +201,53 @@ export default function ProductDetailPage() {
 
         {/* Buy box */}
         <div>
-          <div className="flex flex-wrap items-center gap-2">
-            <Badge variant="secondary">{titleCase(product.category)}</Badge>
-            {product.brand && <Badge variant="outline">{product.brand}</Badge>}
-            <Badge
-              variant={product.stock > 10 ? "outline" : "destructive"}
-              className={cn(product.stock > 10 && "text-emerald-600")}
-            >
-              {product.availabilityStatus ?? `${product.stock} in stock`}
-            </Badge>
-          </div>
+          <p className="text-sm text-muted-foreground">
+            {product.brand ?? titleCase(product.category)}
+          </p>
+          <h1 className="mt-1 text-2xl font-semibold tracking-tight">
+            {product.title}
+          </h1>
 
-          <h1 className="mt-3 text-3xl font-bold tracking-tight">{product.title}</h1>
-
-          <div className="mt-2 flex items-center gap-3">
+          <div className="mt-2.5 flex items-center gap-2">
             <RatingStars rating={product.rating} />
             <span className="text-sm text-muted-foreground">
-              {product.reviews?.length ?? 0} reviews
+              · {product.reviews?.length ?? 0} reviews
             </span>
           </div>
 
-          <div className="mt-4 flex items-baseline gap-3">
-            <span className="text-3xl font-bold">{formatPrice(finalPrice)}</span>
+          <div className="mt-5 flex items-baseline gap-2.5">
+            <span className="text-2xl font-semibold tabular-nums">
+              {formatPrice(finalPrice)}
+            </span>
             {hasDiscount && (
               <>
-                <span className="text-lg text-muted-foreground line-through">
+                <span className="text-sm text-muted-foreground line-through tabular-nums">
                   {formatPrice(product.price)}
                 </span>
-                <Badge className="bg-primary">
-                  Save {Math.round(product.discountPercentage)}%
-                </Badge>
+                <span className="text-sm font-medium text-success">
+                  {Math.round(product.discountPercentage)}% off
+                </span>
               </>
             )}
           </div>
 
-          <p className="mt-4 text-muted-foreground">{product.description}</p>
+          <p className="mt-5 text-sm leading-relaxed text-muted-foreground">
+            {product.description}
+          </p>
 
           <Separator className="my-6" />
 
           <div className="flex flex-wrap items-center gap-3">
-            <div className="flex items-center rounded-md border">
-              <Button
-                size="icon"
-                variant="ghost"
-                className="size-9"
-                aria-label="Decrease quantity"
-                onClick={() => setQuantity((q) => Math.max(1, q - 1))}
-              >
-                <MinusIcon className="size-4" />
-              </Button>
-              <span className="w-10 text-center tabular-nums">{quantity}</span>
-              <Button
-                size="icon"
-                variant="ghost"
-                className="size-9"
-                aria-label="Increase quantity"
-                disabled={quantity >= product.stock}
-                onClick={() => setQuantity((q) => Math.min(product.stock, q + 1))}
-              >
-                <PlusIcon className="size-4" />
-              </Button>
-            </div>
+            <QuantityStepper
+              value={quantity}
+              max={product.stock}
+              onChange={(next) => setQuantity(Math.max(1, next))}
+            />
 
             <Button
               size="lg"
-              className="flex-1"
-              disabled={product.stock === 0}
+              className="flex-1 sm:flex-none sm:min-w-44"
+              disabled={!inStock}
               onClick={() => {
                 cart.addItem(product, quantity);
                 toast.success(`Added ${quantity} to cart`, {
@@ -244,38 +255,52 @@ export default function ProductDetailPage() {
                 });
               }}
             >
-              {product.stock === 0 ? "Out of stock" : "Add to cart"}
+              {inStock ? "Add to cart" : "Out of stock"}
             </Button>
 
             <Button
-              size="lg"
+              size="icon-lg"
               variant="outline"
-              aria-label="Save to wishlist"
+              aria-label={isWishlisted ? "Remove from wishlist" : "Save to wishlist"}
               aria-pressed={isWishlisted}
               onClick={() => {
                 const added = wishlist.toggle(product);
                 toast(added ? "Saved to wishlist" : "Removed from wishlist");
               }}
             >
-              <HeartIcon
-                className={cn(
-                  "size-4",
-                  isWishlisted && "fill-destructive text-destructive"
-                )}
-              />
+              <HeartIcon className={cn(isWishlisted && "fill-foreground")} />
             </Button>
           </div>
 
-          <div className="mt-6 grid gap-3 text-sm sm:grid-cols-3">
-            <InfoRow icon={TruckIcon} text={product.shippingInformation} />
-            <InfoRow icon={ShieldCheckIcon} text={product.warrantyInformation} />
-            <InfoRow icon={RotateCcwIcon} text={product.returnPolicy} />
-          </div>
+          <p
+            className={cn(
+              "mt-3 text-sm",
+              product.stock > 10 ? "text-muted-foreground" : "text-warning"
+            )}
+          >
+            {product.availabilityStatus ?? (inStock ? "In stock" : "Out of stock")}
+            {inStock && product.stock <= 10 && ` — only ${product.stock} left`}
+          </p>
+
+          <dl className="mt-6 space-y-2 text-sm">
+            {[
+              ["Shipping", product.shippingInformation],
+              ["Warranty", product.warrantyInformation],
+              ["Returns", product.returnPolicy],
+            ]
+              .filter(([, value]) => value)
+              .map(([label, value]) => (
+                <div key={label} className="flex gap-3">
+                  <dt className="w-20 shrink-0 text-muted-foreground">{label}</dt>
+                  <dd>{value}</dd>
+                </div>
+              ))}
+          </dl>
         </div>
       </div>
 
-      {/* Details + reviews */}
-      <Tabs defaultValue="specs" className="mt-12">
+      {/* Details */}
+      <Tabs defaultValue="specs" className="mt-14">
         <TabsList>
           <TabsTrigger value="specs">Specifications</TabsTrigger>
           <TabsTrigger value="reviews">
@@ -283,154 +308,149 @@ export default function ProductDetailPage() {
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="specs" className="mt-4">
-          <Card>
-            <CardContent className="grid gap-x-8 gap-y-3 sm:grid-cols-2">
-              <Spec label="SKU" value={product.sku} />
-              <Spec label="Brand" value={product.brand ?? "—"} />
-              <Spec label="Weight" value={`${product.weight} kg`} />
-              <Spec
-                label="Dimensions"
-                value={
-                  product.dimensions
-                    ? `${product.dimensions.width} × ${product.dimensions.height} × ${product.dimensions.depth} cm`
-                    : "—"
-                }
-              />
-              <Spec label="Minimum order" value={product.minimumOrderQuantity} />
-              <Spec label="Stock" value={product.stock} />
-              <Spec label="Tags" value={product.tags?.join(", ")} />
-            </CardContent>
-          </Card>
+        <TabsContent value="specs" className="mt-5 max-w-2xl">
+          <Table>
+            <TableBody>
+              {specs
+                .filter(([, value]) => value !== null && value !== undefined && value !== false && value !== "")
+                .map(([label, value]) => (
+                  <TableRow key={label}>
+                    <TableCell className="w-40 text-muted-foreground">
+                      {label}
+                    </TableCell>
+                    <TableCell>{value}</TableCell>
+                  </TableRow>
+                ))}
+            </TableBody>
+          </Table>
         </TabsContent>
 
-        <TabsContent value="reviews" className="mt-4 space-y-6">
-          <Card>
-            <CardContent>
-              <form onSubmit={handleReviewSubmit} className="space-y-3">
-                <Label htmlFor="review">Write a review</Label>
-                <Input
-                  id="review"
-                  value={reviewText}
-                  onChange={(event) => setReviewText(event.target.value)}
-                  placeholder="What did you think?"
-                />
+        <TabsContent value="reviews" className="mt-5 max-w-2xl">
+          <form onSubmit={handleReviewSubmit} className="space-y-4">
+            <Field>
+              <FieldLabel htmlFor="review">Write a review</FieldLabel>
+              <Textarea
+                id="review"
+                rows={3}
+                value={reviewText}
+                onChange={(event) => setReviewText(event.target.value)}
+                placeholder="What did you think of it?"
+              />
+            </Field>
 
-                <div className="flex flex-wrap items-center gap-3">
-                  <div className="flex items-center gap-0.5">
-                    {[1, 2, 3, 4, 5].map((value) => (
-                      <button
-                        key={value}
-                        type="button"
-                        aria-label={`Rate ${value} star${value === 1 ? "" : "s"}`}
-                        aria-pressed={value === reviewRating}
-                        onClick={() => setReviewRating(value)}
-                        className="rounded p-0.5"
-                      >
-                        <StarIcon
-                          className={cn(
-                            "size-5 transition-colors",
-                            value <= reviewRating
-                              ? "fill-amber-400 text-amber-400"
-                              : "fill-muted text-muted-foreground/40"
-                          )}
-                        />
-                      </button>
-                    ))}
-                  </div>
-                  <Button type="submit" disabled={reviewMutation.isPending}>
-                    {reviewMutation.isPending ? "Posting..." : "Post review"}
-                  </Button>
-                </div>
-              </form>
-            </CardContent>
-          </Card>
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div
+                className="flex items-center gap-0.5"
+                role="radiogroup"
+                aria-label="Rating"
+              >
+                {[1, 2, 3, 4, 5].map((value) => (
+                  <button
+                    key={value}
+                    type="button"
+                    role="radio"
+                    aria-checked={value === reviewRating}
+                    aria-label={`${value} star${value === 1 ? "" : "s"}`}
+                    onClick={() => setReviewRating(value)}
+                    className="rounded-sm p-0.5 focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none"
+                  >
+                    <StarIcon
+                      className={cn(
+                        "size-4 transition-colors",
+                        value <= reviewRating
+                          ? "fill-foreground text-foreground"
+                          : "text-muted-foreground/40"
+                      )}
+                    />
+                  </button>
+                ))}
+              </div>
 
-          <Accordion type="single" collapsible className="w-full">
-            {product.reviews?.map((review, index) => (
-              <AccordionItem key={`${review.reviewerEmail}-${index}`} value={String(index)}>
-                <AccordionTrigger>
-                  <div className="flex flex-1 items-center gap-3 pr-4">
+              <Button
+                type="submit"
+                size="sm"
+                disabled={reviewMutation.isPending || !reviewText.trim()}
+              >
+                {reviewMutation.isPending ? "Posting…" : "Post review"}
+              </Button>
+            </div>
+          </form>
+
+          <Separator className="my-6" />
+
+          {product.reviews?.length ? (
+            <ul className="space-y-5">
+              {product.reviews.map((review, index) => (
+                <li
+                  key={`${review.reviewerEmail}-${index}`}
+                  className="border-b pb-5 last:border-0 last:pb-0"
+                >
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
                     <RatingStars rating={review.rating} showValue={false} />
-                    <span className="font-medium">{review.reviewerName}</span>
-                    <span className="ml-auto text-xs text-muted-foreground">
+                    <span className="text-sm font-medium">{review.reviewerName}</span>
+                    <span className="text-xs text-muted-foreground">
                       {formatDate(review.date)}
                     </span>
                   </div>
-                </AccordionTrigger>
-                <AccordionContent className="text-muted-foreground">
-                  {review.comment}
-                </AccordionContent>
-              </AccordionItem>
-            ))}
-          </Accordion>
+                  <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+                    {review.comment}
+                  </p>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              No reviews yet. Be the first to write one.
+            </p>
+          )}
         </TabsContent>
       </Tabs>
 
       {/* Related — powered by the dependent query above */}
       <section className="mt-14">
-        <h2 className="mb-4 text-xl font-semibold">
-          More from {titleCase(product.category)}
-        </h2>
+        <SectionHeader title={`More in ${titleCase(product.category)}`} />
 
-        {relatedPending ? (
-          <ProductGridSkeleton count={4} />
-        ) : (
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
-            {related?.products
-              ?.filter((item) => item.id !== product.id)
-              .slice(0, 4)
-              .map((item) => (
-                <ProductCard key={item.id} product={item} />
-              ))}
-          </div>
-        )}
+        <div className="mt-4">
+          {relatedPending ? (
+            <ProductGridSkeleton count={4} />
+          ) : (
+            <div className="grid grid-cols-2 gap-x-5 gap-y-8 sm:grid-cols-3 lg:grid-cols-4">
+              {related?.products
+                ?.filter((item) => item.id !== product.id)
+                .slice(0, 4)
+                .map((item) => (
+                  <ProductCard key={item.id} product={item} />
+                ))}
+            </div>
+          )}
+        </div>
       </section>
-    </div>
-  );
-}
-
-function InfoRow({ icon: Icon, text }) {
-  if (!text) return null;
-  return (
-    <div className="flex items-start gap-2 text-muted-foreground">
-      <Icon className="mt-0.5 size-4 shrink-0" />
-      <span>{text}</span>
-    </div>
-  );
-}
-
-function Spec({ label, value }) {
-  return (
-    <div className="flex justify-between gap-4 border-b py-2 last:border-0">
-      <span className="text-muted-foreground">{label}</span>
-      <span className="text-right font-medium">{value ?? "—"}</span>
-    </div>
+    </Page>
   );
 }
 
 function ProductDetailSkeleton() {
   return (
-    <div className="mx-auto max-w-7xl px-4 py-8">
-      <Skeleton className="mb-6 h-8 w-32" />
-      <div className="grid gap-10 lg:grid-cols-2">
+    <Page>
+      <Skeleton className="h-4 w-56" />
+      <div className="mt-6 grid gap-10 lg:grid-cols-2 lg:gap-14">
         <Skeleton className="aspect-square w-full rounded-lg" />
-        <div className="space-y-4">
-          <Skeleton className="h-6 w-24" />
-          <Skeleton className="h-10 w-3/4" />
-          <Skeleton className="h-5 w-32" />
-          <Skeleton className="h-9 w-40" />
-          <Skeleton className="h-20 w-full" />
-          <div className="flex gap-3 pt-4">
-            <Skeleton className="h-11 w-32" />
-            <Skeleton className="h-11 flex-1" />
+        <div>
+          <Skeleton className="h-4 w-20" />
+          <Skeleton className="mt-2 h-7 w-3/4" />
+          <Skeleton className="mt-3 h-4 w-32" />
+          <Skeleton className="mt-5 h-8 w-28" />
+          <div className="mt-5 space-y-2">
+            <Skeleton className="h-4 w-full" />
+            <Skeleton className="h-4 w-full" />
+            <Skeleton className="h-4 w-2/3" />
+          </div>
+          <div className="mt-9 flex gap-3">
+            <Skeleton className="h-9 w-28" />
+            <Skeleton className="h-9 w-44" />
           </div>
         </div>
       </div>
-      <div className="mt-12 flex items-center gap-2">
-        <PackageIcon className="size-4 text-muted-foreground" />
-        <Skeleton className="h-4 w-48" />
-      </div>
-    </div>
+    </Page>
   );
 }

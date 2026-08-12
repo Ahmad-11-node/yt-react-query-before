@@ -3,10 +3,11 @@ import { ArrowLeftIcon } from "lucide-react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
 
+import { Page, PageHeader } from "@/components/layout/page";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 
 const API = "http://localhost:3000/posts";
@@ -64,54 +65,58 @@ export default function OptimisticPage() {
   };
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-8">
-      <Button asChild variant="ghost" size="sm" className="mb-6 -ml-2">
+    <Page className="max-w-3xl">
+      <Button asChild variant="ghost" size="sm" className="-ml-2.5 mb-5">
         <Link to="/patterns">
-          <ArrowLeftIcon className="size-4" />
+          <ArrowLeftIcon />
           All patterns
         </Link>
       </Button>
 
-      <h1 className="text-3xl font-bold tracking-tight">Optimistic updates</h1>
-      <p className="mt-2 text-muted-foreground">
-        Backed by a local json-server so the writes actually persist — the new
-        post appears instantly and rolls back if the request fails.
-      </p>
+      <PageHeader
+        title="Optimistic updates"
+        description="Backed by a local json-server, so these writes actually persist. The new post appears instantly and rolls back if the request fails."
+      />
 
       {error && (
         <Alert variant="destructive" className="mt-6">
           <AlertTitle>API not reachable</AlertTitle>
           <AlertDescription>
             Start it in a second terminal with{" "}
-            <code className="rounded bg-muted px-1.5 py-0.5">npm run server</code>
+            <code className="rounded bg-muted px-1 py-0.5 font-mono text-xs">
+              npm run server
+            </code>
           </AlertDescription>
         </Alert>
       )}
 
-      <Card className="mt-6">
-        <CardContent>
-          <form onSubmit={handleSubmit} className="flex gap-2">
-            <Input name="title" placeholder="New post title" />
-            <Button type="submit" disabled={isCreating}>
-              Add
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
+      <Separator className="mt-6" />
 
-      <div className="mt-6 space-y-2">
-        {isPending && !error ? (
-          Array.from({ length: 3 }, (_, index) => (
-            <Skeleton key={index} className="h-14 w-full rounded-lg" />
-          ))
-        ) : (
-          posts?.map((post) => (
-            <Card key={post.id}>
-              <CardContent className="py-3">{post.title}</CardContent>
-            </Card>
-          ))
-        )}
-      </div>
-    </div>
+      <form onSubmit={handleSubmit} className="mt-8 flex gap-2">
+        <Input
+          name="title"
+          placeholder="New post title"
+          aria-label="New post title"
+          className="max-w-sm"
+        />
+        <Button type="submit" disabled={isCreating}>
+          Add post
+        </Button>
+      </form>
+
+      <ul className="mt-8">
+        {isPending && !error
+          ? Array.from({ length: 3 }, (_, index) => (
+              <li key={index} className="border-b py-3 last:border-0">
+                <Skeleton className="h-4 w-56" />
+              </li>
+            ))
+          : posts?.map((post) => (
+              <li key={post.id} className="border-b py-3 text-sm last:border-0">
+                {post.title}
+              </li>
+            ))}
+      </ul>
+    </Page>
   );
 }

@@ -1,19 +1,36 @@
-import { CompassIcon } from "lucide-react";
 import { Link } from "react-router-dom";
 
+import { Page } from "@/components/layout/page";
 import { Button } from "@/components/ui/button";
+import {
+  Empty,
+  EmptyContent,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyTitle,
+} from "@/components/ui/empty";
 
 export default function NotFoundPage() {
   return (
-    <div className="mx-auto grid max-w-md place-items-center gap-4 px-4 py-32 text-center">
-      <CompassIcon className="size-12 text-muted-foreground" />
-      <h1 className="text-3xl font-bold">Page not found</h1>
-      <p className="text-muted-foreground">
-        That route doesn&apos;t exist. Let&apos;s get you back to the shop.
-      </p>
-      <Button asChild>
-        <Link to="/">Go home</Link>
-      </Button>
-    </div>
+    <Page className="py-24">
+      <Empty>
+        <EmptyHeader>
+          <EmptyTitle>Page not found</EmptyTitle>
+          <EmptyDescription>
+            The page you&apos;re looking for doesn&apos;t exist or has moved.
+          </EmptyDescription>
+        </EmptyHeader>
+        <EmptyContent>
+          <div className="flex gap-2">
+            <Button asChild size="sm">
+              <Link to="/products">Browse products</Link>
+            </Button>
+            <Button asChild size="sm" variant="outline">
+              <Link to="/">Go home</Link>
+            </Button>
+          </div>
+        </EmptyContent>
+      </Empty>
+    </Page>
   );
 }

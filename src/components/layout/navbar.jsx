@@ -1,4 +1,4 @@
-import { HeartIcon, LogOutIcon, MenuIcon, StoreIcon, UserIcon } from "lucide-react";
+import { HeartIcon, MenuIcon, UserIcon } from "lucide-react";
 import { Link, NavLink, useNavigate } from "react-router-dom";
 
 import { CartSheet } from "@/components/cart/cart-sheet";
@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import {
   Sheet,
+  SheetClose,
   SheetContent,
   SheetHeader,
   SheetTitle,
@@ -31,69 +32,81 @@ const links = [
   { to: "/patterns", label: "Patterns" },
 ];
 
-const navLinkClass = ({ isActive }) =>
-  cn(
-    "text-sm transition-colors hover:text-foreground",
-    isActive ? "text-foreground font-medium" : "text-muted-foreground"
-  );
-
 export function Navbar() {
   const wishlist = useWishlist();
   const { user, isAuthenticated, logout } = useAuth();
   const navigate = useNavigate();
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="mx-auto flex h-16 max-w-7xl items-center gap-4 px-4">
+    <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/75">
+      <div className="mx-auto flex h-14 max-w-6xl items-center gap-2 px-4 sm:px-6 lg:px-8">
         <Sheet>
           <SheetTrigger asChild>
-            <Button variant="ghost" size="icon" className="md:hidden" aria-label="Menu">
-              <MenuIcon className="size-5" />
+            <Button
+              variant="ghost"
+              size="icon"
+              className="-ml-2 md:hidden"
+              aria-label="Open menu"
+            >
+              <MenuIcon />
             </Button>
           </SheetTrigger>
           <SheetContent side="left" className="w-64">
-            <SheetHeader>
+            <SheetHeader className="border-b">
               <SheetTitle>Menu</SheetTitle>
             </SheetHeader>
-            <nav className="grid gap-1 px-4">
+            <nav className="grid gap-0.5 p-2">
               {links.map((link) => (
-                <NavLink
-                  key={link.to}
-                  to={link.to}
-                  className="rounded-md px-2 py-2 text-sm hover:bg-accent"
-                >
-                  {link.label}
-                </NavLink>
+                <SheetClose asChild key={link.to}>
+                  <NavLink
+                    to={link.to}
+                    className={({ isActive }) =>
+                      cn(
+                        "rounded-md px-3 py-2 text-sm transition-colors hover:bg-accent",
+                        isActive && "bg-accent font-medium"
+                      )
+                    }
+                  >
+                    {link.label}
+                  </NavLink>
+                </SheetClose>
               ))}
             </nav>
           </SheetContent>
         </Sheet>
 
-        <Link to="/" className="flex items-center gap-2 font-semibold">
-          <StoreIcon className="size-5 text-primary" />
-          <span>Nova Store</span>
+        <Link
+          to="/"
+          className="mr-2 text-sm font-semibold tracking-tight sm:mr-6"
+        >
+          Cachely
         </Link>
 
-        <nav className="hidden items-center gap-6 md:flex">
+        <nav className="hidden items-center gap-1 md:flex">
           {links.map((link) => (
-            <NavLink key={link.to} to={link.to} className={navLinkClass}>
+            <NavLink
+              key={link.to}
+              to={link.to}
+              className={({ isActive }) =>
+                cn(
+                  "rounded-md px-2.5 py-1.5 text-sm transition-colors",
+                  isActive
+                    ? "text-foreground"
+                    : "text-muted-foreground hover:text-foreground"
+                )
+              }
+            >
               {link.label}
             </NavLink>
           ))}
         </nav>
 
-        <div className="ml-auto flex items-center gap-1">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="relative"
-            asChild
-            aria-label="Wishlist"
-          >
-            <Link to="/wishlist">
-              <HeartIcon className="size-5" />
+        <div className="ml-auto flex items-center gap-0.5">
+          <Button variant="ghost" size="icon" className="relative" asChild>
+            <Link to="/wishlist" aria-label={`Wishlist, ${wishlist.count} items`}>
+              <HeartIcon />
               {wishlist.count > 0 && (
-                <Badge className="absolute -right-1 -top-1 size-5 justify-center rounded-full p-0 text-[10px]">
+                <Badge className="absolute -right-0.5 -top-0.5 h-4 min-w-4 justify-center px-1 text-[10px] tabular-nums">
                   {wishlist.count}
                 </Badge>
               )}
@@ -106,32 +119,35 @@ export function Navbar() {
           {isAuthenticated ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" aria-label="Account">
-                  <Avatar className="size-7">
-                    <AvatarImage src={user.image} alt={user.firstName} />
-                    <AvatarFallback>{user.firstName?.[0]}</AvatarFallback>
+                <Button variant="ghost" size="icon" aria-label="Account menu">
+                  <Avatar className="size-6">
+                    <AvatarImage src={user.image} alt="" />
+                    <AvatarFallback className="text-[10px]">
+                      {user.firstName?.[0]}
+                    </AvatarFallback>
                   </Avatar>
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuLabel>
-                  {user.firstName} {user.lastName}
+              <DropdownMenuContent align="end" className="w-48">
+                <DropdownMenuLabel className="font-normal">
+                  <span className="block text-sm font-medium">
+                    {user.firstName} {user.lastName}
+                  </span>
+                  <span className="block truncate text-xs text-muted-foreground">
+                    {user.email}
+                  </span>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={() => navigate("/wishlist")}>
-                  <HeartIcon className="size-4" />
                   Wishlist
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={logout}>
-                  <LogOutIcon className="size-4" />
-                  Sign out
-                </DropdownMenuItem>
+                <DropdownMenuItem onClick={logout}>Sign out</DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           ) : (
-            <Button variant="ghost" size="icon" asChild aria-label="Sign in">
-              <Link to="/login">
-                <UserIcon className="size-5" />
+            <Button variant="ghost" size="icon" asChild>
+              <Link to="/login" aria-label="Sign in">
+                <UserIcon />
               </Link>
             </Button>
           )}

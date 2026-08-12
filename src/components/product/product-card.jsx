@@ -1,11 +1,9 @@
 import { useQueryClient } from "@tanstack/react-query";
-import { HeartIcon, ShoppingCartIcon } from "lucide-react";
+import { HeartIcon } from "lucide-react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
 
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { RatingStars } from "@/components/product/rating-stars";
 import { discountedPrice, formatPrice, titleCase } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -20,7 +18,6 @@ export function ProductCard({ product }) {
 
   const isWishlisted = wishlist.has(product.id);
   const hasDiscount = product.discountPercentage > 0;
-  const finalPrice = discountedPrice(product);
   const outOfStock = product.stock === 0;
 
   /**
@@ -32,86 +29,95 @@ export function ProductCard({ product }) {
   };
 
   return (
-    <Card
-      className="group overflow-hidden py-0 transition-shadow hover:shadow-lg"
+    <div
+      className="group relative flex flex-col"
       onMouseEnter={prefetchDetail}
       onFocusCapture={prefetchDetail}
     >
-      <div className="relative overflow-hidden bg-muted">
-        <Link to={`/products/${product.id}`} aria-label={product.title}>
-          <img
-            src={product.thumbnail}
-            alt={product.title}
-            loading="lazy"
-            className="aspect-square w-full object-cover transition-transform duration-300 group-hover:scale-105"
-          />
-        </Link>
-
-        {hasDiscount && (
-          <Badge className="absolute left-2 top-2 bg-primary">
-            -{Math.round(product.discountPercentage)}%
-          </Badge>
-        )}
+      <div className="relative overflow-hidden rounded-md border bg-muted/40">
+        {/* No link wrapper here — the title link below is stretched across the
+            whole card, so this image is already inside its hit area. */}
+        <img
+          src={product.thumbnail}
+          alt=""
+          loading="lazy"
+          className={cn(
+            "aspect-square w-full object-cover transition-opacity duration-200",
+            outOfStock && "opacity-40"
+          )}
+        />
 
         {outOfStock && (
-          <div className="absolute inset-0 grid place-items-center bg-background/70">
-            <Badge variant="secondary">Out of stock</Badge>
-          </div>
+          <span className="absolute inset-x-0 bottom-0 bg-background/90 py-1.5 text-center text-xs font-medium text-muted-foreground">
+            Out of stock
+          </span>
         )}
 
+        {/* Always visible rather than revealed on hover — a control the user
+            can't see is a control they won't use. */}
         <Button
-          size="icon"
-          variant="secondary"
+          size="icon-sm"
+          variant="ghost"
           aria-label={isWishlisted ? "Remove from wishlist" : "Save to wishlist"}
           aria-pressed={isWishlisted}
-          className="absolute right-2 top-2 size-8 opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100"
+          // z-10 keeps it above the stretched card link below, which comes
+          // later in the DOM and would otherwise swallow the click.
+          className="absolute right-1.5 top-1.5 z-10 bg-background/80 backdrop-blur-sm hover:bg-background"
           onClick={() => {
             const added = wishlist.toggle(product);
             toast(added ? "Saved to wishlist" : "Removed from wishlist");
           }}
         >
           <HeartIcon
-            className={cn("size-4", isWishlisted && "fill-destructive text-destructive")}
+            className={cn(
+              "text-muted-foreground",
+              isWishlisted && "fill-foreground text-foreground"
+            )}
           />
         </Button>
       </div>
 
-      <CardContent className="space-y-2 p-4">
+      <div className="flex flex-1 flex-col pt-3">
         <p className="text-xs text-muted-foreground">{titleCase(product.category)}</p>
 
-        <Link
-          to={`/products/${product.id}`}
-          className="line-clamp-2 text-sm font-medium leading-snug hover:underline"
-        >
-          {product.title}
-        </Link>
+        <h3 className="mt-1 text-sm font-medium leading-snug">
+          <Link to={`/products/${product.id}`} className="hover:underline">
+            {/* Stretches the link over the whole card for a larger hit area. */}
+            <span className="absolute inset-0" aria-hidden="true" />
+            <span className="line-clamp-2">{product.title}</span>
+          </Link>
+        </h3>
 
-        <RatingStars rating={product.rating} />
+        <RatingStars rating={product.rating} className="mt-1.5" />
 
-        <div className="flex items-end justify-between gap-2 pt-1">
-          <div className="min-w-0">
-            <p className="font-semibold">{formatPrice(finalPrice)}</p>
+        <div className="mt-auto flex items-center justify-between gap-2 pt-3">
+          <div className="flex items-baseline gap-1.5">
+            <span className="text-sm font-medium tabular-nums">
+              {formatPrice(discountedPrice(product))}
+            </span>
             {hasDiscount && (
-              <p className="text-xs text-muted-foreground line-through">
+              <span className="text-xs text-muted-foreground line-through tabular-nums">
                 {formatPrice(product.price)}
-              </p>
+              </span>
             )}
           </div>
 
           <Button
-            size="icon"
-            className="size-8 shrink-0"
+            size="sm"
+            variant="outline"
             disabled={outOfStock}
-            aria-label={`Add ${product.title} to cart`}
+            // Sits above the stretched link so the click reaches the button.
+            className="relative z-10"
             onClick={() => {
               cart.addItem(product);
               toast.success("Added to cart", { description: product.title });
             }}
           >
-            <ShoppingCartIcon className="size-4" />
+            Add
+            <span className="sr-only"> {product.title} to cart</span>
           </Button>
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }

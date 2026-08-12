@@ -1,19 +1,11 @@
 import { useState } from "react";
-import { Loader2Icon, LogInIcon } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Field, FieldDescription, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { useAuth } from "@/store/auth-context";
 
 // dummyjson ships a fixed set of users; this one is in their docs.
@@ -39,61 +31,57 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="mx-auto grid max-w-md px-4 py-20">
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-2xl">Sign in</CardTitle>
-          <CardDescription>
-            Uses the dummyjson auth endpoint. The demo account is pre-filled.
-          </CardDescription>
-        </CardHeader>
+    <div className="mx-auto w-full max-w-sm px-4 py-20">
+      <div className="space-y-1.5">
+        <h1 className="text-2xl font-semibold tracking-tight">Sign in</h1>
+        <p className="text-sm text-muted-foreground">
+          Authenticates against the dummyjson API. The demo account is
+          pre-filled.
+        </p>
+      </div>
 
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="username">Username</Label>
-              <Input
-                id="username"
-                autoComplete="username"
-                value={form.username}
-                onChange={(event) =>
-                  setForm((prev) => ({ ...prev, username: event.target.value }))
-                }
-                required
-              />
-            </div>
+      <form onSubmit={handleSubmit} className="mt-8 space-y-5">
+        <Field>
+          <FieldLabel htmlFor="username">Username</FieldLabel>
+          <Input
+            id="username"
+            autoComplete="username"
+            value={form.username}
+            onChange={(event) =>
+              setForm((prev) => ({ ...prev, username: event.target.value }))
+            }
+            required
+          />
+        </Field>
 
-            <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
-              <Input
-                id="password"
-                type="password"
-                autoComplete="current-password"
-                value={form.password}
-                onChange={(event) =>
-                  setForm((prev) => ({ ...prev, password: event.target.value }))
-                }
-                required
-              />
-            </div>
+        <Field>
+          <FieldLabel htmlFor="password">Password</FieldLabel>
+          <Input
+            id="password"
+            type="password"
+            autoComplete="current-password"
+            value={form.password}
+            onChange={(event) =>
+              setForm((prev) => ({ ...prev, password: event.target.value }))
+            }
+            required
+          />
+          <FieldDescription>
+            Any dummyjson user works — try <code>emilys</code> /{" "}
+            <code>emilyspass</code>.
+          </FieldDescription>
+        </Field>
 
-            {loginError && (
-              <Alert variant="destructive">
-                <AlertDescription>{loginError.message}</AlertDescription>
-              </Alert>
-            )}
+        {loginError && (
+          <Alert variant="destructive">
+            <AlertDescription>{loginError.message}</AlertDescription>
+          </Alert>
+        )}
 
-            <Button type="submit" className="w-full" disabled={isLoggingIn}>
-              {isLoggingIn ? (
-                <Loader2Icon className="size-4 animate-spin" />
-              ) : (
-                <LogInIcon className="size-4" />
-              )}
-              {isLoggingIn ? "Signing in..." : "Sign in"}
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
+        <Button type="submit" size="lg" className="w-full" disabled={isLoggingIn}>
+          {isLoggingIn ? "Signing in…" : "Sign in"}
+        </Button>
+      </form>
     </div>
   );
 }

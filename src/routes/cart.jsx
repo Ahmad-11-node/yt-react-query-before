@@ -1,10 +1,28 @@
 import { useState } from "react";
-import { MinusIcon, PlusIcon, ShoppingBagIcon, Trash2Icon } from "lucide-react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
 
+import { Page, PageHeader } from "@/components/layout/page";
+import { QuantityStepper } from "@/components/product/quantity-stepper";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Empty,
+  EmptyContent,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyTitle,
+} from "@/components/ui/empty";
 import { Separator } from "@/components/ui/separator";
 import { discountedPrice, formatPrice } from "@/lib/format";
 import { useCart } from "@/store/cart-context";
@@ -15,17 +33,22 @@ export default function CartPage() {
 
   if (cart.items.length === 0) {
     return (
-      <div className="mx-auto grid max-w-md place-items-center gap-4 px-4 py-24 text-center">
-        <ShoppingBagIcon className="size-12 text-muted-foreground" />
-        <h1 className="text-2xl font-semibold">Your cart is empty</h1>
-        <p className="text-muted-foreground">
-          Once you add something it will show up here — and stick around after a
-          refresh.
-        </p>
-        <Button asChild>
-          <Link to="/products">Browse products</Link>
-        </Button>
-      </div>
+      <Page>
+        <PageHeader title="Cart" />
+        <Empty className="mt-8 border">
+          <EmptyHeader>
+            <EmptyTitle>Your cart is empty</EmptyTitle>
+            <EmptyDescription>
+              Items you add are saved here and stay put after a refresh.
+            </EmptyDescription>
+          </EmptyHeader>
+          <EmptyContent>
+            <Button asChild size="sm">
+              <Link to="/products">Browse products</Link>
+            </Button>
+          </EmptyContent>
+        </Empty>
+      </Page>
     );
   }
 
@@ -42,133 +65,141 @@ export default function CartPage() {
   };
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-8">
-      <h1 className="mb-6 text-3xl font-bold tracking-tight">Your cart</h1>
+    <Page>
+      <PageHeader
+        title="Cart"
+        description={`${cart.count} item${cart.count === 1 ? "" : "s"}`}
+        actions={
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="ghost" size="sm">
+                Clear cart
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Clear your cart?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This removes all {cart.count} item
+                  {cart.count === 1 ? "" : "s"}. You can&apos;t undo it.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={cart.clear}>
+                  Clear cart
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        }
+      />
 
-      <div className="grid gap-8 lg:grid-cols-[1fr_360px]">
-        <ul className="space-y-4">
+      <div className="mt-8 grid items-start gap-10 lg:grid-cols-[1fr_320px]">
+        {/* A list with rules between rows, not a card per item. */}
+        <ul className="-mt-5">
           {cart.items.map((item) => (
-            <li key={item.id}>
-              <Card>
-                <CardContent className="flex gap-4">
-                  <Link to={`/products/${item.id}`} className="shrink-0">
-                    <img
-                      src={item.thumbnail}
-                      alt={item.title}
-                      className="size-24 rounded-md border object-cover"
-                    />
-                  </Link>
+            <li key={item.id} className="border-b last:border-0">
+              <div className="flex gap-4 py-5">
+                <Link to={`/products/${item.id}`} className="shrink-0">
+                  <img
+                    src={item.thumbnail}
+                    alt=""
+                    className="size-20 rounded-md border bg-muted/40 object-cover"
+                  />
+                </Link>
 
-                  <div className="min-w-0 flex-1">
+                <div className="min-w-0 flex-1">
+                  <div className="flex justify-between gap-4">
                     <Link
                       to={`/products/${item.id}`}
-                      className="font-medium hover:underline"
+                      className="text-sm font-medium hover:underline"
                     >
                       {item.title}
                     </Link>
-
-                    <p className="mt-1 text-sm text-muted-foreground">
-                      {formatPrice(discountedPrice(item))} each
-                      {item.discountPercentage > 0 && (
-                        <span className="ml-2 line-through">
-                          {formatPrice(item.price)}
-                        </span>
-                      )}
-                    </p>
-
-                    <div className="mt-3 flex items-center gap-2">
-                      <div className="flex items-center rounded-md border">
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          className="size-8"
-                          aria-label="Decrease quantity"
-                          onClick={() => cart.setQuantity(item.id, item.quantity - 1)}
-                        >
-                          <MinusIcon className="size-3.5" />
-                        </Button>
-                        <span className="w-8 text-center text-sm tabular-nums">
-                          {item.quantity}
-                        </span>
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          className="size-8"
-                          aria-label="Increase quantity"
-                          disabled={item.quantity >= item.stock}
-                          onClick={() => cart.setQuantity(item.id, item.quantity + 1)}
-                        >
-                          <PlusIcon className="size-3.5" />
-                        </Button>
-                      </div>
-
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        className="text-muted-foreground"
-                        onClick={() => cart.removeItem(item.id)}
-                      >
-                        <Trash2Icon className="size-4" />
-                        Remove
-                      </Button>
-                    </div>
+                    <span className="shrink-0 text-sm font-medium tabular-nums">
+                      {formatPrice(discountedPrice(item) * item.quantity)}
+                    </span>
                   </div>
 
-                  <p className="shrink-0 font-semibold">
-                    {formatPrice(discountedPrice(item) * item.quantity)}
+                  <p className="mt-1 text-xs text-muted-foreground tabular-nums">
+                    {formatPrice(discountedPrice(item))} each
+                    {item.discountPercentage > 0 && (
+                      <span className="ml-1.5 line-through">
+                        {formatPrice(item.price)}
+                      </span>
+                    )}
                   </p>
-                </CardContent>
-              </Card>
+
+                  <div className="mt-3 flex items-center gap-3">
+                    <QuantityStepper
+                      value={item.quantity}
+                      max={item.stock}
+                      onChange={(next) => cart.setQuantity(item.id, next)}
+                      label={item.title}
+                    />
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="text-muted-foreground"
+                      onClick={() => cart.removeItem(item.id)}
+                    >
+                      Remove
+                      <span className="sr-only"> {item.title}</span>
+                    </Button>
+                  </div>
+                </div>
+              </div>
             </li>
           ))}
         </ul>
 
-        <Card className="h-fit lg:sticky lg:top-24">
-          <CardHeader>
-            <CardTitle>Order summary</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">
-                Subtotal ({cart.count} items)
-              </span>
-              <span>{formatPrice(cart.listTotal)}</span>
+        {/* One panel, because it is genuinely a distinct sticky region. */}
+        <aside className="rounded-lg border p-5 lg:sticky lg:top-20">
+          <h2 className="text-sm font-medium">Order summary</h2>
+
+          <dl className="mt-4 space-y-2.5 text-sm">
+            <div className="flex justify-between">
+              <dt className="text-muted-foreground">Subtotal</dt>
+              <dd className="tabular-nums">{formatPrice(cart.listTotal)}</dd>
             </div>
 
             {cart.savings > 0 && (
-              <div className="flex justify-between text-sm text-emerald-600">
-                <span>Discounts</span>
-                <span>-{formatPrice(cart.savings)}</span>
+              <div className="flex justify-between">
+                <dt className="text-muted-foreground">Discounts</dt>
+                <dd className="text-success tabular-nums">
+                  −{formatPrice(cart.savings)}
+                </dd>
               </div>
             )}
 
-            <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">Shipping</span>
-              <span>Free</span>
+            <div className="flex justify-between">
+              <dt className="text-muted-foreground">Shipping</dt>
+              <dd className="text-muted-foreground">Free</dd>
             </div>
 
-            <Separator />
+            <Separator className="my-3" />
 
-            <div className="flex justify-between text-lg font-semibold">
-              <span>Total</span>
-              <span>{formatPrice(cart.total)}</span>
+            <div className="flex justify-between text-base font-medium">
+              <dt>Total</dt>
+              <dd className="tabular-nums">{formatPrice(cart.total)}</dd>
             </div>
+          </dl>
 
-            <Button
-              className="w-full"
-              size="lg"
-              disabled={isPlacingOrder}
-              onClick={handleCheckout}
-            >
-              {isPlacingOrder ? "Placing order..." : "Checkout"}
-            </Button>
+          <Button
+            className="mt-5 w-full"
+            size="lg"
+            disabled={isPlacingOrder}
+            onClick={handleCheckout}
+          >
+            {isPlacingOrder ? "Placing order…" : "Checkout"}
+          </Button>
 
-            <Button variant="ghost" className="w-full" onClick={cart.clear}>
-              Clear cart
-            </Button>
-          </CardContent>
-        </Card>
+          <p className="mt-3 text-center text-xs text-muted-foreground">
+            Demo checkout — nothing is charged.
+          </p>
+        </aside>
       </div>
-    </div>
+    </Page>
   );
 }

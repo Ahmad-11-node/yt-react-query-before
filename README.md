@@ -1,4 +1,6 @@
-# Nova Store
+# Cachely
+
+**Cached, prefetched, never stale.**
 
 A storefront built on the [dummyjson](https://dummyjson.com) products API to
 practise **TanStack Query v5** in a real application rather than in isolated
@@ -100,6 +102,16 @@ through filter changes. The search box debounces into the URL rather than
 querying off every keystroke.
 
 ---
+
+## Assets
+
+Banner photography in `public/banners/` comes from
+[Unsplash](https://unsplash.com) under the Unsplash License (free for
+commercial and non-commercial use, no attribution required). The files are
+committed rather than hot-linked so the app doesn't depend on a third-party CDN
+at runtime — 560 KB total, cropped to 1600×640.
+
+Product imagery is served by dummyjson.
 
 ## Notes on the API
 

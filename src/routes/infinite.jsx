@@ -1,11 +1,15 @@
 import { useCallback, useEffect, useRef } from "react";
 import { useInfiniteQuery } from "@tanstack/react-query";
-import { Loader2Icon } from "lucide-react";
 
+import { Page, PageHeader } from "@/components/layout/page";
 import { ProductCard } from "@/components/product/product-card";
-import { ProductGridSkeleton } from "@/components/product/product-card-skeleton";
+import {
+  ProductCardSkeleton,
+  ProductGridSkeleton,
+} from "@/components/product/product-card-skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
 import { infiniteProductsQuery, PAGE_SIZE } from "@/queries/products";
 
 export default function InfinitePage() {
@@ -45,49 +49,56 @@ export default function InfinitePage() {
   const total = data?.pages[0]?.total ?? 0;
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-8">
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold tracking-tight">Infinite scroll</h1>
-        <p className="mt-1 text-muted-foreground">
-          {products.length} of {total} products loaded with{" "}
-          <code className="rounded bg-muted px-1.5 py-0.5 text-sm">
-            useInfiniteQuery
-          </code>
-        </p>
-      </div>
+    <Page>
+      <PageHeader
+        title="Infinite scroll"
+        description={
+          total
+            ? `${products.length} of ${total} products loaded`
+            : "Loading catalogue…"
+        }
+      />
 
-      {isError && (
-        <Alert variant="destructive">
-          <AlertTitle>Could not load products</AlertTitle>
-          <AlertDescription>{error.message}</AlertDescription>
-        </Alert>
-      )}
+      <Separator className="mt-6" />
 
-      {isPending ? (
-        <ProductGridSkeleton count={PAGE_SIZE} />
-      ) : (
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
-          {products.map((product) => (
-            <ProductCard key={product.id} product={product} />
-          ))}
-        </div>
-      )}
-
-      <div ref={sentinelRef} className="grid place-items-center py-10">
-        {isFetchingNextPage ? (
-          <Loader2Icon className="size-6 animate-spin text-muted-foreground" />
-        ) : hasNextPage ? (
-          <Button variant="outline" onClick={() => fetchNextPage()}>
-            Load more
-          </Button>
-        ) : (
-          products.length > 0 && (
-            <p className="text-sm text-muted-foreground">
-              That&apos;s everything — {total} products.
-            </p>
-          )
+      <div className="mt-8">
+        {isError && (
+          <Alert variant="destructive">
+            <AlertTitle>Couldn&apos;t load products</AlertTitle>
+            <AlertDescription>{error.message}</AlertDescription>
+          </Alert>
         )}
+
+        {isPending ? (
+          <ProductGridSkeleton count={PAGE_SIZE} />
+        ) : (
+          <div className="grid grid-cols-2 gap-x-5 gap-y-8 sm:grid-cols-3 lg:grid-cols-4">
+            {products.map((product) => (
+              <ProductCard key={product.id} product={product} />
+            ))}
+
+            {/* Skeletons in the grid rather than a detached spinner, so the
+                page keeps its shape while the next batch arrives. */}
+            {isFetchingNextPage &&
+              Array.from({ length: 4 }, (_, index) => (
+                <ProductCardSkeleton key={`next-${index}`} />
+              ))}
+          </div>
+        )}
+
+        <div ref={sentinelRef} className="flex justify-center py-10">
+          {!isPending && !isFetchingNextPage && hasNextPage && (
+            <Button variant="outline" size="sm" onClick={() => fetchNextPage()}>
+              Load more
+            </Button>
+          )}
+          {!hasNextPage && products.length > 0 && (
+            <p className="text-sm text-muted-foreground">
+              All {total} products loaded.
+            </p>
+          )}
+        </div>
       </div>
-    </div>
+    </Page>
   );
 }

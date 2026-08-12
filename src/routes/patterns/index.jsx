@@ -1,20 +1,14 @@
 import { ArrowRightIcon } from "lucide-react";
 import { Link } from "react-router-dom";
 
-import { Badge } from "@/components/ui/badge";
+import { Page, PageHeader } from "@/components/layout/page";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
 
 const patterns = [
   {
     title: "Paginated queries",
-    hook: "placeholderData: keepPreviousData",
+    api: "placeholderData: keepPreviousData",
     description:
       "Holds the current page on screen while the next one loads, so the grid dims instead of collapsing into skeletons.",
     usedIn: "The shop grid",
@@ -27,7 +21,7 @@ const patterns = [
   },
   {
     title: "Infinite queries",
-    hook: "useInfiniteQuery",
+    api: "useInfiniteQuery",
     description:
       "Accumulates pages into one flat list, with an IntersectionObserver sentinel requesting the next page before the user reaches the bottom.",
     usedIn: "The infinite scroll page",
@@ -42,10 +36,10 @@ const patterns = [
   },
   {
     title: "Parallel queries",
-    hook: "useQueries",
+    api: "useQueries",
     description:
       "Runs one request per featured category at the same time, for a list whose length isn't known when the component is written.",
-    usedIn: "The home page category rows",
+    usedIn: "The home page category rails",
     to: "/patterns/parallel",
     code: `useQueries({
   queries: categories.map((slug) =>
@@ -55,7 +49,7 @@ const patterns = [
   },
   {
     title: "Dependent queries",
-    hook: "enabled",
+    api: "enabled",
     description:
       "The related-products query is gated until the product loads and tells it which category to fetch. Without the gate it fires with an undefined id.",
     usedIn: "Related items on a product page",
@@ -67,7 +61,7 @@ const patterns = [
   },
   {
     title: "Optimistic updates",
-    hook: "onMutate / onError rollback",
+    api: "onMutate / onError rollback",
     description:
       "Writes to the cache before the server answers, snapshots the previous value, and rolls back if the request fails.",
     usedIn: "Posting a product review",
@@ -83,7 +77,7 @@ onError: (_e, _v, ctx) =>
   },
   {
     title: "Prefetching",
-    hook: "queryClient.prefetchQuery",
+    api: "queryClient.prefetchQuery",
     description:
       "Hovering a product card warms its detail query, so opening the product usually renders straight from cache with no spinner.",
     usedIn: "Every product card",
@@ -98,49 +92,55 @@ onError: (_e, _v, ctx) =>
 
 export default function PatternsPage() {
   return (
-    <div className="mx-auto max-w-7xl px-4 py-8">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold tracking-tight">Query patterns</h1>
-        <p className="mt-2 max-w-2xl text-muted-foreground">
-          This storefront was built to practise TanStack Query. Each pattern
-          below is used somewhere in the real app rather than only in isolation
-          — open the devtools panel to watch the cache while you browse.
-        </p>
-      </div>
+    <Page>
+      <PageHeader
+        title="Query patterns"
+        description="Each pattern below is used somewhere in the storefront rather than only in isolation. Open the devtools panel to watch the cache while you browse."
+      />
 
-      <div className="grid gap-5 md:grid-cols-2">
+      <Separator className="mt-6" />
+
+      <dl className="mt-2">
         {patterns.map((pattern) => (
-          <Card key={pattern.title} className="flex flex-col">
-            <CardHeader>
-              <div className="flex flex-wrap items-center gap-2">
-                <CardTitle>{pattern.title}</CardTitle>
-                <Badge variant="secondary" className="font-mono text-xs">
-                  {pattern.hook}
-                </Badge>
-              </div>
-              <CardDescription>{pattern.description}</CardDescription>
-            </CardHeader>
-
-            <CardContent className="mt-auto space-y-4">
-              <pre className="overflow-x-auto rounded-md bg-muted p-3 text-xs leading-relaxed">
-                <code>{pattern.code}</code>
-              </pre>
-
-              <div className="flex items-center justify-between gap-3">
-                <span className="text-sm text-muted-foreground">
-                  Used in: {pattern.usedIn}
+          <div
+            key={pattern.title}
+            className="grid gap-x-10 gap-y-4 border-b py-8 last:border-0 md:grid-cols-[minmax(0,1fr)_minmax(0,22rem)]"
+          >
+            <div>
+              <dt className="flex flex-wrap items-baseline gap-x-2.5 gap-y-1">
+                <span className="text-base font-medium tracking-tight">
+                  {pattern.title}
                 </span>
-                <Button asChild size="sm" variant="ghost">
+                <code className="font-mono text-xs text-muted-foreground">
+                  {pattern.api}
+                </code>
+              </dt>
+
+              <dd className="mt-2 max-w-prose text-sm leading-relaxed text-muted-foreground">
+                {pattern.description}
+              </dd>
+
+              <dd className="mt-4 flex items-center gap-3 text-sm">
+                <span className="text-muted-foreground">
+                  Used in {pattern.usedIn}
+                </span>
+                <Button asChild variant="link" size="sm" className="h-auto p-0">
                   <Link to={pattern.to}>
                     See it
-                    <ArrowRightIcon className="size-4" />
+                    <ArrowRightIcon />
                   </Link>
                 </Button>
-              </div>
-            </CardContent>
-          </Card>
+              </dd>
+            </div>
+
+            <dd className="min-w-0">
+              <pre className="overflow-x-auto rounded-md border bg-muted/40 p-3 text-xs leading-relaxed">
+                <code>{pattern.code}</code>
+              </pre>
+            </dd>
+          </div>
         ))}
-      </div>
-    </div>
+      </dl>
+    </Page>
   );
 }

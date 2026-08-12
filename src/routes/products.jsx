@@ -1,14 +1,36 @@
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { SearchIcon, SlidersHorizontalIcon, XIcon } from "lucide-react";
+import { SearchIcon, XIcon } from "lucide-react";
 import { useSearchParams } from "react-router-dom";
 
+import { Page, PageHeader } from "@/components/layout/page";
 import { ProductCard } from "@/components/product/product-card";
 import { ProductGridSkeleton } from "@/components/product/product-card-skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import {
+  Empty,
+  EmptyContent,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyTitle,
+} from "@/components/ui/empty";
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupButton,
+  InputGroupInput,
+} from "@/components/ui/input-group";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
 import {
   Select,
   SelectContent,
@@ -16,6 +38,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Separator } from "@/components/ui/separator";
 import { useDebounce } from "@/hooks/use-debounce";
 import { SORT_OPTIONS } from "@/lib/api";
 import { titleCase } from "@/lib/format";
@@ -70,188 +93,243 @@ export default function ProductsPage() {
   );
 
   const totalPages = data ? Math.max(Math.ceil(data.total / PAGE_SIZE), 1) : 1;
-  const hasFilters = Boolean(search || category || sort !== "featured");
+  const activeFilters = [
+    search && { key: "q", label: `“${search}”` },
+    category && { key: "category", label: titleCase(category) },
+  ].filter(Boolean);
 
   const clearFilters = () => {
     setSearchInput("");
     setSearchParams({}, { replace: true });
   };
 
-  return (
-    <div className="mx-auto max-w-7xl px-4 py-8">
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold tracking-tight">Shop</h1>
-        <p className="mt-1 text-muted-foreground">
-          {data ? `${data.total} products` : "Loading catalogue..."}
-        </p>
-      </div>
+  const goToPage = (next) => {
+    updateParam("page", String(next));
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
 
-      {/* Filter bar */}
-      <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center">
-        <div className="relative flex-1">
-          <SearchIcon className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
+  return (
+    <Page>
+      <PageHeader
+        title="Shop"
+        description={
+          data
+            ? `${data.total.toLocaleString()} products`
+            : "Loading catalogue…"
+        }
+      />
+
+      {/* Filters */}
+      <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+        <InputGroup className="sm:max-w-sm">
+          <InputGroupAddon>
+            <SearchIcon />
+          </InputGroupAddon>
+          <InputGroupInput
             value={searchInput}
             onChange={(event) => setSearchInput(event.target.value)}
-            placeholder="Search products..."
-            className="pl-9"
+            placeholder="Search products"
             aria-label="Search products"
           />
           {searchInput && (
-            <Button
-              size="icon"
-              variant="ghost"
-              aria-label="Clear search"
-              className="absolute right-1 top-1/2 size-7 -translate-y-1/2"
-              onClick={() => setSearchInput("")}
-            >
-              <XIcon className="size-4" />
-            </Button>
+            <InputGroupAddon align="inline-end">
+              <InputGroupButton
+                size="icon-xs"
+                aria-label="Clear search"
+                onClick={() => setSearchInput("")}
+              >
+                <XIcon />
+              </InputGroupButton>
+            </InputGroupAddon>
           )}
+        </InputGroup>
+
+        <div className="flex gap-3 sm:ml-auto">
+          <Select
+            value={category || "all"}
+            onValueChange={(value) => {
+              setSearchInput("");
+              updateParam("category", value === "all" ? "" : value);
+            }}
+          >
+            <SelectTrigger className="w-full sm:w-44" aria-label="Filter by category">
+              <SelectValue placeholder="Category" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All categories</SelectItem>
+              {categories?.map((item) => (
+                <SelectItem key={item.slug} value={item.slug}>
+                  {item.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select value={sort} onValueChange={(value) => updateParam("sort", value)}>
+            <SelectTrigger className="w-full sm:w-44" aria-label="Sort products">
+              <SelectValue placeholder="Sort" />
+            </SelectTrigger>
+            <SelectContent>
+              {SORT_OPTIONS.map((option) => (
+                <SelectItem key={option.value} value={option.value}>
+                  {option.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
-
-        <Select
-          value={category || "all"}
-          onValueChange={(value) => {
-            setSearchInput("");
-            updateParam("category", value === "all" ? "" : value);
-          }}
-        >
-          <SelectTrigger className="sm:w-48" aria-label="Filter by category">
-            <SelectValue placeholder="Category" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All categories</SelectItem>
-            {categories?.map((item) => (
-              <SelectItem key={item.slug} value={item.slug}>
-                {item.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-
-        <Select value={sort} onValueChange={(value) => updateParam("sort", value)}>
-          <SelectTrigger className="sm:w-48" aria-label="Sort products">
-            <SlidersHorizontalIcon className="size-4" />
-            <SelectValue placeholder="Sort" />
-          </SelectTrigger>
-          <SelectContent>
-            {SORT_OPTIONS.map((option) => (
-              <SelectItem key={option.value} value={option.value}>
-                {option.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
       </div>
 
-      {hasFilters && (
-        <div className="mb-4 flex flex-wrap items-center gap-2">
-          {search && <Badge variant="secondary">Search: {search}</Badge>}
-          {category && <Badge variant="secondary">{titleCase(category)}</Badge>}
-          {sort !== "featured" && (
-            <Badge variant="secondary">
-              {SORT_OPTIONS.find((option) => option.value === sort)?.label}
+      {activeFilters.length > 0 && (
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          {activeFilters.map((filter) => (
+            <Badge key={filter.key} variant="secondary" className="gap-1 pr-1">
+              {filter.label}
+              <button
+                type="button"
+                aria-label={`Remove filter ${filter.label}`}
+                className="rounded-sm opacity-60 hover:opacity-100"
+                onClick={() => {
+                  if (filter.key === "q") setSearchInput("");
+                  updateParam(filter.key, "");
+                }}
+              >
+                <XIcon className="size-3" />
+              </button>
             </Badge>
-          )}
+          ))}
           <Button variant="ghost" size="sm" onClick={clearFilters}>
             Clear all
           </Button>
         </div>
       )}
 
-      {isError && (
-        <Alert variant="destructive">
-          <AlertTitle>Could not load products</AlertTitle>
-          <AlertDescription className="flex flex-col items-start gap-2">
-            <span>{error.message}</span>
-            <Button size="sm" variant="outline" onClick={() => refetch()}>
-              Try again
-            </Button>
-          </AlertDescription>
-        </Alert>
-      )}
+      <Separator className="mt-6" />
 
-      {isPending && <ProductGridSkeleton count={PAGE_SIZE} />}
+      <div className="mt-8">
+        {isError && (
+          <Alert variant="destructive">
+            <AlertTitle>Couldn&apos;t load products</AlertTitle>
+            <AlertDescription className="flex flex-col items-start gap-3">
+              <span>{error.message}</span>
+              <Button size="sm" variant="outline" onClick={() => refetch()}>
+                Try again
+              </Button>
+            </AlertDescription>
+          </Alert>
+        )}
 
-      {data && data.products.length === 0 && (
-        <div className="grid place-items-center gap-3 py-20 text-center">
-          <SearchIcon className="size-10 text-muted-foreground" />
-          <p className="font-medium">No products match those filters</p>
-          <Button variant="outline" onClick={clearFilters}>
-            Clear filters
-          </Button>
-        </div>
-      )}
+        {isPending && <ProductGridSkeleton count={PAGE_SIZE} />}
 
-      {data && data.products.length > 0 && (
-        <>
-          {/* isPlaceholderData means we're showing the previous page while the
-              next one is in flight — dim it instead of unmounting the grid. */}
-          <div
-            className={cn(
-              "grid grid-cols-2 gap-4 transition-opacity sm:grid-cols-3 lg:grid-cols-4",
-              isPlaceholderData && "opacity-60"
+        {data && data.products.length === 0 && (
+          <Empty className="border">
+            <EmptyHeader>
+              <EmptyTitle>No matching products</EmptyTitle>
+              <EmptyDescription>
+                {search
+                  ? `Nothing matched “${search}”. Try a shorter or more general term.`
+                  : "No products in this category right now."}
+              </EmptyDescription>
+            </EmptyHeader>
+            <EmptyContent>
+              <Button variant="outline" size="sm" onClick={clearFilters}>
+                Clear filters
+              </Button>
+            </EmptyContent>
+          </Empty>
+        )}
+
+        {data && data.products.length > 0 && (
+          <>
+            {/* isPlaceholderData means the previous page is still on screen
+                while the next one loads — dim it instead of unmounting. */}
+            <div
+              className={cn(
+                "grid grid-cols-2 gap-x-5 gap-y-8 transition-opacity sm:grid-cols-3 lg:grid-cols-4",
+                isPlaceholderData && "opacity-50"
+              )}
+            >
+              {data.products.map((product) => (
+                <ProductCard key={product.id} product={product} />
+              ))}
+            </div>
+
+            {totalPages > 1 && (
+              <ProductPagination
+                page={page}
+                totalPages={totalPages}
+                onNavigate={goToPage}
+              />
             )}
-          >
-            {data.products.map((product) => (
-              <ProductCard key={product.id} product={product} />
-            ))}
-          </div>
-
-          <Pagination
-            page={page}
-            totalPages={totalPages}
-            onChange={(next) => {
-              updateParam("page", String(next));
-              window.scrollTo({ top: 0, behavior: "smooth" });
-            }}
-          />
-        </>
-      )}
-    </div>
+          </>
+        )}
+      </div>
+    </Page>
   );
 }
 
-function Pagination({ page, totalPages, onChange }) {
-  if (totalPages <= 1) return null;
+/** Builds a 1 … n-1 n n+1 … last window so the control stays a fixed width. */
+function pageWindow(page, totalPages) {
+  const pages = new Set([1, totalPages, page, page - 1, page + 1]);
+  const sorted = [...pages].filter((n) => n >= 1 && n <= totalPages).sort((a, b) => a - b);
 
-  // A short sliding window around the current page keeps the control compact.
-  const windowStart = Math.max(1, Math.min(page - 2, totalPages - 4));
-  const pages = Array.from({ length: Math.min(5, totalPages) }, (_, i) => windowStart + i);
+  return sorted.flatMap((value, index) => {
+    const previous = sorted[index - 1];
+    return previous && value - previous > 1 ? ["ellipsis", value] : [value];
+  });
+}
+
+function ProductPagination({ page, totalPages, onNavigate }) {
+  const items = pageWindow(page, totalPages);
 
   return (
-    <nav className="mt-10 flex items-center justify-center gap-1" aria-label="Pagination">
-      <Button
-        variant="outline"
-        size="sm"
-        disabled={page === 1}
-        onClick={() => onChange(page - 1)}
-      >
-        Previous
-      </Button>
+    <Pagination className="mt-10">
+      <PaginationContent>
+        <PaginationItem>
+          <PaginationPrevious
+            href="#"
+            aria-disabled={page === 1}
+            className={cn(page === 1 && "pointer-events-none opacity-50")}
+            onClick={(event) => {
+              event.preventDefault();
+              if (page > 1) onNavigate(page - 1);
+            }}
+          />
+        </PaginationItem>
 
-      {pages.map((number) => (
-        <Button
-          key={number}
-          variant={number === page ? "default" : "ghost"}
-          size="sm"
-          className="w-9"
-          aria-current={number === page ? "page" : undefined}
-          onClick={() => onChange(number)}
-        >
-          {number}
-        </Button>
-      ))}
+        {items.map((item, index) =>
+          item === "ellipsis" ? (
+            <PaginationItem key={`ellipsis-${index}`}>
+              <PaginationEllipsis />
+            </PaginationItem>
+          ) : (
+            <PaginationItem key={item}>
+              <PaginationLink
+                href="#"
+                isActive={item === page}
+                onClick={(event) => {
+                  event.preventDefault();
+                  onNavigate(item);
+                }}
+              >
+                {item}
+              </PaginationLink>
+            </PaginationItem>
+          )
+        )}
 
-      <Button
-        variant="outline"
-        size="sm"
-        disabled={page >= totalPages}
-        onClick={() => onChange(page + 1)}
-      >
-        Next
-      </Button>
-    </nav>
+        <PaginationItem>
+          <PaginationNext
+            href="#"
+            aria-disabled={page >= totalPages}
+            className={cn(page >= totalPages && "pointer-events-none opacity-50")}
+            onClick={(event) => {
+              event.preventDefault();
+              if (page < totalPages) onNavigate(page + 1);
+            }}
+          />
+        </PaginationItem>
+      </PaginationContent>
+    </Pagination>
   );
 }

@@ -2,9 +2,9 @@ import { useQuery } from "@tanstack/react-query";
 import { ArrowLeftIcon } from "lucide-react";
 import { Link } from "react-router-dom";
 
-import { Badge } from "@/components/ui/badge";
+import { Page, PageHeader } from "@/components/layout/page";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 
 const fetchPostById = async (postId) => {
@@ -35,50 +35,60 @@ export default function DependantPage() {
   });
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-8">
-      <Button asChild variant="ghost" size="sm" className="mb-6 -ml-2">
+    <Page className="max-w-3xl">
+      <Button asChild variant="ghost" size="sm" className="-ml-2.5 mb-5">
         <Link to="/patterns">
-          <ArrowLeftIcon className="size-4" />
+          <ArrowLeftIcon />
           All patterns
         </Link>
       </Button>
 
-      <h1 className="text-3xl font-bold tracking-tight">Dependent queries</h1>
-      <p className="mt-2 text-muted-foreground">
-        The comments query stays idle until the post supplies its id.
-      </p>
+      <PageHeader
+        title="Dependent queries"
+        description="The comments query stays idle until the post supplies its id."
+      />
 
-      <Card className="mt-6">
-        <CardContent className="space-y-2">
-          <Badge variant="secondary">Query 1 — post</Badge>
-          {isPending ? (
-            <Skeleton className="h-6 w-3/4" />
-          ) : (
-            <p className="text-lg font-medium">{post?.title}</p>
-          )}
-        </CardContent>
-      </Card>
+      <Separator className="mt-6" />
 
-      <Card className="mt-4">
-        <CardContent className="space-y-3">
-          <Badge variant="secondary">Query 2 — comments (gated)</Badge>
+      <section className="mt-8">
+        <div className="flex items-baseline gap-2.5">
+          <h2 className="text-base font-medium tracking-tight">Post</h2>
+          <code className="font-mono text-xs text-muted-foreground">
+            [&quot;post&quot;, 2]
+          </code>
+        </div>
+        {isPending ? (
+          <Skeleton className="mt-3 h-5 w-2/3" />
+        ) : (
+          <p className="mt-3 text-sm">{post?.title}</p>
+        )}
+      </section>
 
-          {isCommentsPending ? (
-            <p className="text-sm text-muted-foreground">
-              Waiting for the post to resolve...
-            </p>
-          ) : (
-            <ul className="space-y-2">
-              {comments?.map((comment) => (
-                <li key={comment.id} className="rounded-md border p-3 text-sm">
-                  <span className="font-medium">{comment.user.username}</span>
-                  <p className="mt-1 text-muted-foreground">{comment.body}</p>
-                </li>
-              ))}
-            </ul>
-          )}
-        </CardContent>
-      </Card>
-    </div>
+      <section className="mt-10">
+        <div className="flex items-baseline gap-2.5">
+          <h2 className="text-base font-medium tracking-tight">Comments</h2>
+          <code className="font-mono text-xs text-muted-foreground">
+            [&quot;comments&quot;, {post?.id ?? "undefined"}]
+          </code>
+        </div>
+
+        {isCommentsPending ? (
+          <p className="mt-3 text-sm text-muted-foreground">
+            Idle — waiting for the post to resolve.
+          </p>
+        ) : (
+          <ul className="mt-3">
+            {comments?.map((comment) => (
+              <li key={comment.id} className="border-b py-3 last:border-0">
+                <p className="text-sm font-medium">{comment.user.username}</p>
+                <p className="mt-0.5 text-sm text-muted-foreground">
+                  {comment.body}
+                </p>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+    </Page>
   );
 }

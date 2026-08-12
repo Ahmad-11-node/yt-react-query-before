@@ -1,12 +1,13 @@
 import { useQueries, useQuery } from "@tanstack/react-query";
-import { ArrowRightIcon, SparklesIcon } from "lucide-react";
+import { ArrowRightIcon } from "lucide-react";
 import { Link } from "react-router-dom";
 
+import { HeroCarousel } from "@/components/home/hero-carousel";
+import { PromoTiles } from "@/components/home/promo-tiles";
+import { Page, SectionHeader } from "@/components/layout/page";
 import { ProductCard } from "@/components/product/product-card";
 import { ProductGridSkeleton } from "@/components/product/product-card-skeleton";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { titleCase } from "@/lib/format";
 import { categoriesQuery, productListQuery } from "@/queries/products";
@@ -31,113 +32,98 @@ export default function HomePage() {
   });
 
   return (
-    <div>
-      {/* Hero */}
-      <section className="border-b bg-gradient-to-b from-primary/10 to-background">
-        <div className="mx-auto max-w-7xl px-4 py-20 text-center">
-          <Badge variant="secondary" className="mb-4">
-            <SparklesIcon className="size-3" />
-            Built with TanStack Query v5
-          </Badge>
-          <h1 className="mx-auto max-w-3xl text-4xl font-bold tracking-tight sm:text-6xl">
-            A storefront that stays fast under your thumb
-          </h1>
-          <p className="mx-auto mt-4 max-w-2xl text-lg text-muted-foreground">
-            Cached, prefetched and optimistically updated. Browse nearly 200
-            products with instant filtering, sorting and pagination.
-          </p>
-          <div className="mt-8 flex flex-wrap justify-center gap-3">
-            <Button asChild size="lg">
-              <Link to="/products">
-                Start shopping
-                <ArrowRightIcon className="size-4" />
-              </Link>
-            </Button>
-            <Button asChild size="lg" variant="outline">
-              <Link to="/patterns">See the query patterns</Link>
-            </Button>
-          </div>
-        </div>
-      </section>
+    <Page className="py-10">
+      {/* The banner carries the headline, so the page needs only an
+          accessible title above it rather than a second visible one. */}
+      <h1 className="sr-only">Cachely</h1>
+      <HeroCarousel />
 
-      {/* Categories */}
-      <section className="mx-auto max-w-7xl px-4 py-14">
-        <h2 className="mb-6 text-2xl font-semibold">Shop by category</h2>
-
-        {categoriesPending ? (
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-6">
-            {Array.from({ length: 12 }, (_, index) => (
-              <Skeleton key={index} className="h-16 rounded-lg" />
-            ))}
-          </div>
-        ) : (
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-6">
-            {categories?.slice(0, 12).map((category) => (
-              <Link key={category.slug} to={`/products?category=${category.slug}`}>
-                <Card className="h-full py-0 transition-colors hover:border-primary hover:bg-accent">
-                  <CardContent className="grid h-16 place-items-center p-3 text-center text-sm font-medium">
+      {/* Categories as plain links rather than a grid of cards. */}
+      <section className="mt-8">
+        <SectionHeader title="Categories" />
+        <div className="mt-4 flex flex-wrap gap-2">
+          {categoriesPending
+            ? Array.from({ length: 14 }, (_, index) => (
+                <Skeleton key={index} className="h-8 w-28 rounded-md" />
+              ))
+            : categories?.map((category) => (
+                <Button
+                  key={category.slug}
+                  asChild
+                  variant="outline"
+                  size="sm"
+                  className="font-normal"
+                >
+                  <Link to={`/products?category=${category.slug}`}>
                     {category.name}
-                  </CardContent>
-                </Card>
-              </Link>
-            ))}
-          </div>
-        )}
-      </section>
-
-      {/* Top rated */}
-      <section className="mx-auto max-w-7xl px-4 pb-14">
-        <div className="mb-6 flex items-center justify-between">
-          <h2 className="text-2xl font-semibold">Top rated</h2>
-          <Button asChild variant="ghost" size="sm">
-            <Link to="/products?sort=rating-desc">
-              View all
-              <ArrowRightIcon className="size-4" />
-            </Link>
-          </Button>
+                  </Link>
+                </Button>
+              ))}
         </div>
-
-        {topRatedPending ? (
-          <ProductGridSkeleton count={4} />
-        ) : (
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
-            {topRated?.products?.slice(0, 4).map((product) => (
-              <ProductCard key={product.id} product={product} />
-            ))}
-          </div>
-        )}
       </section>
 
-      {/* One row per featured category, each from its own parallel query */}
+      <ProductRail
+        title="Top rated"
+        to="/products?sort=rating-desc"
+        isPending={topRatedPending}
+        products={topRated?.products}
+      />
+
+      {/* Breaks up the run of product rails so the page isn't one repeated
+          shape from top to bottom. */}
+      <section className="mt-12">
+        <PromoTiles />
+      </section>
+
+      {/* One rail per featured category, each from its own parallel query. */}
       {FEATURED_CATEGORIES.map((slug, index) => {
         const result = categoryPreviews[index];
 
         return (
-          <section key={slug} className="mx-auto max-w-7xl px-4 pb-14">
-            <div className="mb-6 flex items-center justify-between">
-              <h2 className="text-2xl font-semibold">{titleCase(slug)}</h2>
-              <Button asChild variant="ghost" size="sm">
-                <Link to={`/products?category=${slug}`}>
-                  View all
-                  <ArrowRightIcon className="size-4" />
-                </Link>
-              </Button>
-            </div>
-
-            {result.isPending ? (
-              <ProductGridSkeleton count={4} />
-            ) : result.isError ? (
-              <p className="text-sm text-destructive">{result.error.message}</p>
-            ) : (
-              <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
-                {result.data?.products?.slice(0, 4).map((product) => (
-                  <ProductCard key={product.id} product={product} />
-                ))}
-              </div>
-            )}
-          </section>
+          <ProductRail
+            key={slug}
+            title={titleCase(slug)}
+            to={`/products?category=${slug}`}
+            isPending={result.isPending}
+            error={result.error}
+            products={result.data?.products}
+          />
         );
       })}
-    </div>
+    </Page>
+  );
+}
+
+function ProductRail({ title, to, isPending, error, products }) {
+  return (
+    <section className="mt-12">
+      <SectionHeader
+        title={title}
+        action={
+          <Button asChild variant="ghost" size="sm">
+            <Link to={to}>
+              View all
+              <ArrowRightIcon />
+            </Link>
+          </Button>
+        }
+      />
+
+      <div className="mt-4">
+        {isPending ? (
+          <ProductGridSkeleton count={4} />
+        ) : error ? (
+          <p className="text-sm text-muted-foreground">
+            Couldn&apos;t load this section.
+          </p>
+        ) : (
+          <div className="grid grid-cols-2 gap-x-5 gap-y-8 sm:grid-cols-3 lg:grid-cols-4">
+            {products?.slice(0, 4).map((product) => (
+              <ProductCard key={product.id} product={product} />
+            ))}
+          </div>
+        )}
+      </div>
+    </section>
   );
 }
