@@ -95,7 +95,7 @@ export default function PatternsPage() {
     <Page>
       <PageHeader
         title="Query patterns"
-        description="Each pattern below is used somewhere in the storefront rather than only in isolation. Open the devtools panel to watch the cache while you browse."
+        description="Each pattern below is used somewhere in the storefront rather than only in isolation. Run the project locally to watch the cache update live in the React Query devtools."
       />
 
       <Separator className="mt-6" />
